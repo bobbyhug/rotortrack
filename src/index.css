@@ -53,3 +53,24 @@ html, body, #root {
 .maplibregl-map { background: #000 !important; }
 .maplibregl-ctrl-attrib { font-size: 9px !important; opacity: 0.5; }
 .maplibregl-ctrl-logo { display: none !important; }
+
+/* --- Own-ship: spinning rotor disc (GPU CSS transform, compositor-driven) --- */
+.ownship-rot {
+  transform-origin: center;
+  transition: transform 800ms cubic-bezier(0.4, 0, 0.2, 1); /* eased shortest-path heading */
+  will-change: transform;
+}
+.rotor {
+  transform-box: fill-box;   /* rotate about the group's own center */
+  transform-origin: center;
+  animation: rotor-spin 0.6s linear infinite;
+  will-change: transform;
+}
+@keyframes rotor-spin { to { transform: rotate(360deg); } }
+/* parked on the ramp → stop the rotor (battery/thermal) */
+.ownship.parked .rotor { animation-play-state: paused; }
+/* accessibility / power: no spin if the user prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .rotor { animation: none; }
+  .ownship-rot { transition: none; }
+}

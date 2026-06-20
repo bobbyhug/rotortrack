@@ -7,7 +7,7 @@ import {
   eteSeconds,
 } from "./greatCircle";
 import { trackFromPositions, turnCue } from "./track";
-import { angleDelta, norm360 } from "./units";
+import { angleDelta, norm360, unwrapAngle } from "./units";
 
 describe("distanceNm", () => {
   it("is zero for identical points", () => {
@@ -78,6 +78,21 @@ describe("angleDelta / norm360", () => {
     expect(angleDelta(0, 181)).toBe(-179);
     expect(norm360(-10)).toBe(350);
     expect(norm360(370)).toBe(10);
+  });
+});
+
+describe("unwrapAngle (shortest-path rotation, no 0/360 snap)", () => {
+  it("crosses north the short way going up", () => {
+    expect(unwrapAngle(350, 10)).toBe(370);
+  });
+  it("crosses north the short way going down", () => {
+    expect(unwrapAngle(10, 350)).toBe(-10);
+  });
+  it("keeps accumulating from an already-unwrapped value", () => {
+    expect(unwrapAngle(370, 20)).toBe(380); // norm360(370)=10 → +10
+  });
+  it("no-op when already aligned", () => {
+    expect(unwrapAngle(45, 45)).toBe(45);
   });
 });
 

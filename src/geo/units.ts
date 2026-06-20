@@ -24,3 +24,11 @@ export function angleDelta(a: number, b: number): number {
   if (d <= -180) d += 360;
   return d;
 }
+
+/**
+ * Advance an accumulating angle toward `target` along the shortest path, so a
+ * smoothly-animated rotation never spin-flips across the 0/360 boundary
+ * (e.g. unwrapAngle(350, 10) === 370, unwrapAngle(10, 350) === -10).
+ */
+export const unwrapAngle = (current: number, target: number): number =>
+  current + angleDelta(norm360(current), target);
