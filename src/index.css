@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+/*
+ * RotorTrack — Meta Ray-Ban Display additive theme.
+ * #000 = transparent on the waveguide. Bright cyan/white/magenta strokes only.
+ * No large filled bright areas; use mix-blend-mode: plus-lighter for surfaces.
+ */
+@theme {
+  --color-bg: #000000;
+  --color-surface: #0a0c10;
+  --color-surface-2: #14171e;
+  --color-ink: #ffffff;
+  --color-muted: #9aa3af;
+  --color-cyan: #00e0ff;     /* primary nav / focus */
+  --color-magenta: #ff39d6;  /* direct-route line (ForeFlight style) */
+  --color-amber: #ffb020;    /* caution / wind */
+  --color-green: #19f29b;    /* good / into-wind / live */
+  --color-red: #ff4d4d;      /* warning / tailwind */
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body, #root {
+  width: 600px;
+  height: 600px;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root { position: relative; }
+
+/* D-pad focus model: only the focusable ring + slight scale; never a big bright fill. */
+.focusable {
+  outline: none;
+  border: 2px solid transparent;
+  transition: transform 475ms cubic-bezier(0.6, 0, 0.4, 1),
+              border-color 200ms ease, box-shadow 200ms ease;
+}
+.focusable:focus,
+.focusable[data-focus="true"] {
+  border-color: var(--color-cyan);
+  box-shadow: 0 0 18px rgba(0, 224, 255, 0.55);
+  transform: scale(0.96);
+}
+
+/* Additive elevation for HUD chips/panels (not translucency). */
+.surface { background: var(--color-surface); mix-blend-mode: plus-lighter; }
+
+/* MapLibre canvas sits behind the HUD. */
+.maplibregl-map { background: #000 !important; }
+.maplibregl-ctrl-attrib { font-size: 9px !important; opacity: 0.5; }
+.maplibregl-ctrl-logo { display: none !important; }
