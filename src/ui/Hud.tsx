@@ -1,5 +1,5 @@
 import type { GpsStatus } from "../state/useFlightState";
-import { fmtDeg, fmtEte, fmtKt, fmtNm } from "./format";
+import { cardinal8, fmtDeg, fmtEte, fmtKt, fmtNm } from "./format";
 
 export interface Nav {
   targetName: string;
@@ -20,8 +20,13 @@ export interface Nav {
 
 const box = "surface rounded-lg px-2.5 py-1.5";
 
+const TURN_DEADBAND_DEG = 3; // ignore sub-3° corrections (below GPS-heading noise)
+
 export default function Hud({ nav, gps }: { nav: Nav; gps: GpsStatus }) {
-  const onTrack = nav.xtkNm != null && Math.abs(nav.xtkNm) < 0.1;
+  // Show a turn cue only when the correction is worth a control input; round to
+  // the nearest 5° so it reads cleanly (5°R / 10°L) instead of jittering by 1°.
+  const showCue = nav.turnDeg != null && nav.turnDeg >= TURN_DEADBAND_DEG;
+  const cueDeg = nav.turnDeg != null ? Math.round(nav.turnDeg / 5) * 5 : 0;
   return (
     <>
       {/* destination (top-left) */}
@@ -44,7 +49,7 @@ export default function Hud({ nav, gps }: { nav: Nav; gps: GpsStatus }) {
           <span className="text-[14px] font-bold"> nm</span>
         </div>
         <div className="text-[15px] font-bold" style={{ color: "var(--color-cyan)" }}>
-          {fmtEte(nav.eteSec)} · BRG {fmtDeg(nav.bearingDeg)}°
+          {fmtEte(nav.eteSec)} · BRG {fmtDeg(nav.bearingDeg)}° {cardinal8(nav.bearingDeg)}
         </div>
       </div>
 
@@ -63,10 +68,10 @@ export default function Hud({ nav, gps }: { nav: Nav; gps: GpsStatus }) {
 
       {/* correction cue + XTE (center-left) */}
       <div className="absolute left-2 top-1/2 -translate-y-1/2 text-left">
-        {nav.turnDeg != null && !onTrack ? (
+        {showCue ? (
           <div className="text-[40px] font-extrabold leading-none" style={{ color: "var(--color-cyan)" }}>
             {nav.turnSide === "L" ? "‹ " : ""}
-            {nav.turnDeg}°{nav.turnSide}
+            {cueDeg}°{nav.turnSide}
             {nav.turnSide === "R" ? " ›" : ""}
           </div>
         ) : (

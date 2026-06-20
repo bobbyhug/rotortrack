@@ -38,7 +38,13 @@ export interface Settings {
   trackUp: boolean;
   tpaAgl: number; // pattern altitude AGL
   glideRatio: number; // R44 advisory glide/auto figure
+  callsign: string; // spoken callsign for CTAF self-announce calls
 }
-export const DEFAULT_SETTINGS: Settings = { trackUp: true, tpaAgl: 1000, glideRatio: 4 };
+export const DEFAULT_SETTINGS: Settings = {
+  trackUp: true,
+  tpaAgl: 1000,
+  glideRatio: 4,
+  callsign: "Helicopter 63 Mike Papa",
+};
 export const loadSettings = (): Settings => ({ ...DEFAULT_SETTINGS, ...load(K.settings, {}) });
 export const saveSettings = (s: Settings): void => save(K.settings, s);

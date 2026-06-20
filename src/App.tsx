@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import type { LatLon } from "./types";
 import { bearingDeg, crossTrack, distanceNm, eteSeconds } from "./geo/greatCircle";
 import { turnCue } from "./geo/track";
+import { angleDelta } from "./geo/units";
 import { airportByIdent, nearestAirports, recommendRunway } from "./airports";
 import { windComponents } from "./wind/components";
 import { formatWind, isStale } from "./wind/metar";
 import { aglEstimateFt, detectPattern, patternAltitudeFt } from "./pattern/pattern";
+import { buildCtafCall } from "./ctaf/ctaf";
 import { DEFAULT_DESTINATIONS } from "./data/destinations";
 import { useFlightState } from "./state/useFlightState";
 import { useMock } from "./state/useMock";
@@ -25,6 +27,7 @@ import NearestReadout from "./ui/NearestReadout";
 import RunwayPanel from "./ui/RunwayPanel";
 import PatternPanel from "./ui/PatternPanel";
 import DestinationList from "./ui/DestinationList";
+import CtafPanel from "./ui/CtafPanel";
 import Disclaimer from "./ui/Disclaimer";
 import { useDpad } from "./ui/dpad";
 
@@ -129,8 +132,42 @@ export default function App() {
       patternAlt: patternAltitudeFt(cand.elevationFt, settings.tpaAgl),
       agl: aglEstimateFt(fix.altFtMsl, cand.elevationFt),
       windStale: isStale(w),
+      inboundFrom: bearingDeg(cand, fix), // bearing field→aircraft = the direction we're arriving from
     };
   }, [fix, selected, diverted, nearest, wind, settings.tpaAgl]);
+
+  // suggested CTAF self-announce call for the field we're approaching (≤10 nm)
+  const ctaf = useMemo(() => {
+    if (!fix) return null;
+    const destAirport = selected.ident ? airportByIdent(selected.ident) : undefined;
+    const cand = !diverted && destAirport ? destAirport : nearest?.airport;
+    if (!cand) return null;
+    const d = distanceNm(fix, cand);
+    if (d > 10) return null;
+    const rec = recommendRunway(cand, wind.near(cand));
+    const pattern = rec && fix.trackDeg != null ? detectPattern(fix, fix.trackDeg, rec.end) : null;
+
+    // Are we arriving at this field, in its pattern, or departing it?
+    const goingThere = diverted || !!destAirport; // targeted an airport (dest or divert)
+    const inLeg = !!pattern && pattern.leg !== "MANEUVERING";
+    const closing =
+      fix.trackDeg == null || Math.abs(angleDelta(fix.trackDeg, bearingDeg(fix, cand))) < 100;
+    const departing = !goingThere && !inLeg && !closing && d <= 2.5;
+    if (!goingThere && !inLeg && !closing && !departing) return null; // transiting → no call
+
+    return {
+      call: buildCtafCall({
+        fieldName: cand.name,
+        callsign: settings.callsign,
+        distNm: d,
+        inboundFromDeg: bearingDeg(cand, fix),
+        leg: pattern?.leg ?? null,
+        leftTraffic: pattern?.leftTraffic ?? true,
+        runwayIdent: rec?.end.ident ?? null,
+        departing,
+      }),
+    };
+  }, [fix, selected, diverted, nearest, wind, settings.callsign]);
 
   // reachability (advisory) for nearest field
   const reach = useMemo<"in" | "marginal" | null>(() => {
@@ -193,9 +230,12 @@ export default function App() {
             runwayIdent={approach.rec?.end.ident ?? null}
             patternAltFt={approach.patternAlt}
             aglFt={approach.agl}
+            inboundFromDeg={approach.inboundFrom}
           />
         </>
       )}
+
+      {ctaf && <CtafPanel call={ctaf.call} />}
 
       {/* action rail (D-pad) */}
       <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-2">

@@ -1,4 +1,5 @@
 import type { PatternResult } from "../pattern/pattern";
+import { cardinal8, fmtDeg } from "./format";
 
 interface Props {
   ident: string;
@@ -6,6 +7,7 @@ interface Props {
   runwayIdent: string | null;
   patternAltFt: number | null;
   aglFt: number | null;
+  inboundFromDeg: number | null;
 }
 
 const LABEL: Record<string, string> = {
@@ -18,7 +20,7 @@ const LABEL: Record<string, string> = {
 };
 
 /** Traffic-pattern awareness panel — shown on approach. Advisory. */
-export default function PatternPanel({ ident, result, runwayIdent, patternAltFt, aglFt }: Props) {
+export default function PatternPanel({ ident, result, runwayIdent, patternAltFt, aglFt, inboundFromDeg }: Props) {
   if (!result) return null;
   const side = result.leftTraffic ? "LEFT" : "RIGHT";
   return (
@@ -29,6 +31,11 @@ export default function PatternPanel({ ident, result, runwayIdent, patternAltFt,
       <div className="text-[20px] font-extrabold" style={{ color: "var(--color-cyan)" }}>
         {side} {LABEL[result.leg]} {runwayIdent ? `RWY ${runwayIdent}` : ""}
       </div>
+      {inboundFromDeg != null && (
+        <div className="text-[13px] font-bold" style={{ color: "var(--color-amber)" }}>
+          INBOUND FROM {cardinal8(inboundFromDeg)} · {fmtDeg(inboundFromDeg)}°
+        </div>
+      )}
       <div className="text-[12px]">
         {result.nextLeg ? `next: ${LABEL[result.nextLeg]}` : "next: land"}
         {patternAltFt != null ? ` · TPA ${patternAltFt}ʼ` : ""}

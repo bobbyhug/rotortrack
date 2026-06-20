@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RotorTrack — Glasses Preview Harness</title>
+<style>
+  :root { --cyan:#00e0ff; --ink:#e7eaf0; --muted:#8b93a1; }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; min-height:100vh; background:#08090c; color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    display:flex; gap:28px; align-items:flex-start; justify-content:center; padding:28px; flex-wrap:wrap;
+  }
+  h1 { font-size:18px; letter-spacing:.5px; margin:0 0 2px; }
+  h1 b { color:var(--cyan); }
+  .sub { color:var(--muted); font-size:12px; margin-bottom:14px; }
+
+  /* Stage = the 600x600 lens + its simulated backdrop */
+  .stage {
+    position:relative; width:600px; height:600px; border-radius:20px; overflow:hidden;
+    box-shadow:0 0 0 2px rgba(0,224,255,.25), 0 18px 60px rgba(0,0,0,.6);
+    background:#000;
+  }
+  /* Daylight backdrop behind the lens (sky → foliage) — only shown in daylight mode */
+  .stage::before {
+    content:""; position:absolute; inset:0; opacity:0;
+    background:linear-gradient(#9ec7ff 0%, #cfe3ff 38%, #8fb56a 58%, #4f7a3a 100%);
+    transition:opacity .25s;
+  }
+  .stage.daylight::before { opacity:1; }
+  /* The app. Additive sim: screen-blend over the backdrop so #000 reads transparent. */
+  iframe { position:absolute; inset:0; width:600px; height:600px; border:0; background:#000; }
+  .stage.daylight iframe { mix-blend-mode:screen; background:transparent; }
+  .stage.gray iframe { filter:grayscale(1) contrast(1.15) brightness(1.05); }
+
+  .label {
+    position:absolute; left:10px; bottom:8px; z-index:5; font-size:10px; letter-spacing:1.5px;
+    color:rgba(255,255,255,.55); pointer-events:none; text-shadow:0 1px 2px #000;
+  }
+
+  /* Controls panel */
+  .panel { width:300px; }
+  .card { background:#11141a; border:1px solid #20242e; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .card h2 { font-size:12px; letter-spacing:1.5px; color:var(--muted); margin:0 0 10px; text-transform:uppercase; }
+  .btns { display:flex; flex-wrap:wrap; gap:8px; }
+  button {
+    background:#1a1f29; color:var(--ink); border:1px solid #2a3140; border-radius:9px;
+    padding:9px 12px; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  button.on { background:var(--cyan); color:#04121a; border-color:var(--cyan); }
+  kbd {
+    display:inline-block; min-width:20px; text-align:center; background:#0c0f14; border:1px solid #2a3140;
+    border-bottom-width:2px; border-radius:6px; padding:2px 6px; font-size:12px; font-family:ui-monospace,monospace; color:var(--cyan);
+  }
+  .row { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:13px; margin:7px 0; }
+  .row span:last-child { color:var(--muted); text-align:right; }
+  .tip { font-size:12px; color:var(--muted); line-height:1.5; }
+  a { color:var(--cyan); }
+</style>
+</head>
+<body>
+  <div>
+    <h1><b>RotorTrack</b> — Glasses Preview</h1>
+    <div class="sub">600×600 monocular additive panel · arrow keys = swipes · Enter = pinch/tap</div>
+    <div class="stage" id="stage">
+      <iframe id="app" src="/?mock=1" title="RotorTrack" tabindex="0"></iframe>
+      <div class="label" id="label">MRBD · 600×600 · MOCK</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="card">
+      <h2>View modes</h2>
+      <div class="btns">
+        <button id="btnDay">☀️ Daylight squint test</button>
+        <button id="btnGray">◐ Grayscale</button>
+        <button id="btnReload">⟳ Restart flight</button>
+      </div>
+      <p class="tip" style="margin-top:10px">
+        <b>Daylight</b> renders the app <i>additively</i> over a bright outdoor scene — black goes
+        transparent, so you see how the rotor disc & HUD wash out on a Transitions lens in sun.
+        <b>Grayscale</b> approximates the single-color legibility. Squint-test both.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Controls (click the screen first)</h2>
+      <div class="row"><span>Move focus</span><span><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd></span></div>
+      <div class="row"><span>Select (pinch/tap)</span><span><kbd>Enter</kbd></span></div>
+      <div class="row"><span>Back</span><span><kbd>Esc</kbd></span></div>
+      <div class="row"><span>Divert / Track-up</span><span><kbd>d</kbd> <kbd>t</kbd></span></div>
+      <div class="row"><span>Next mock run</span><span><kbd>n</kbd></span></div>
+    </div>
+
+    <div class="card">
+      <h2>Notes</h2>
+      <p class="tip">
+        This is a <b>content</b> preview, not true on-lens fidelity. The only real check is the glasses
+        via the publish/QR flow. Open the raw app at
+        <a href="/?mock=1" target="_blank">/?mock=1</a>.
+      </p>
+    </div>
+  </div>
+
+<script>
+  const stage = document.getElementById('stage');
+  const app = document.getElementById('app');
+  const label = document.getElementById('label');
+  const day = document.getElementById('btnDay');
+  const gray = document.getElementById('btnGray');
+  day.onclick = () => { const on = stage.classList.toggle('daylight'); day.classList.toggle('on', on); updateLabel(); app.focus(); };
+  gray.onclick = () => { const on = stage.classList.toggle('gray'); gray.classList.toggle('on', on); updateLabel(); app.focus(); };
+  document.getElementById('btnReload').onclick = () => { app.src = '/?mock=1&t=' + Date.now(); setTimeout(()=>app.focus(), 400); };
+  function updateLabel(){
+    const m = [];
+    if (stage.classList.contains('daylight')) m.push('DAYLIGHT');
+    if (stage.classList.contains('gray')) m.push('GRAY');
+    label.textContent = 'MRBD · 600×600 · MOCK' + (m.length ? ' · ' + m.join(' · ') : '');
+  }
+  // focus the app so the keyboard drives it immediately
+  app.addEventListener('load', () => app.focus());
+  window.addEventListener('load', () => app.focus());
+</script>
+</body>
+</html>
