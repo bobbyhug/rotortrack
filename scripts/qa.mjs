@@ -1,0 +1,14 @@
+import { chromium } from "playwright";
+const b = await chromium.launch({ args:["--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader","--ignore-gpu-blocklist"] });
+const p = await (await b.newContext({ viewport:{width:600,height:600}, deviceScaleFactor:2 })).newPage();
+const errs=[]; p.on("pageerror",e=>errs.push(e.message)); p.on("console",m=>m.type()==="error"&&errs.push(m.text()));
+const shot=(n)=>p.screenshot({path:`/tmp/qa-${n}.png`});
+await p.goto("http://localhost:5173/?mock=1",{waitUntil:"load"});
+let x=p.getByRole("button",{name:/I understand/i}); if(await x.count())await x.click(); await p.waitForTimeout(600);
+x=p.getByRole("button",{name:/Got it/i}); if(await x.count())await x.click(); await p.waitForTimeout(3000);
+await shot("nearfield");
+await p.getByRole("button",{name:/DIRECT TO/i}).first().click(); await p.waitForTimeout(700);
+await p.getByText("Lake House").click(); await p.waitForTimeout(3500);
+await shot("lakehouse");
+console.log("ERRORS:", errs.length?errs.join("\n"):"none");
+await b.close();

@@ -50,8 +50,8 @@ export default function Hud({
         </div>
       </button>
 
-      {/* distance + ETE (top-right under NRST handled separately) */}
-      <div className={`${box} absolute right-2 top-[88px] text-right`}>
+      {/* distance + ETE (top-right, below the variable-height NRST box) */}
+      <div className={`${box} absolute right-2 top-[124px] text-right`}>
         <div className="text-[11px] font-bold tracking-widest" style={{ color: "var(--color-muted)" }}>
           DIST · ETE
         </div>
@@ -95,8 +95,8 @@ export default function Hud({
         </div>
       </div>
 
-      {/* ground speed + track (bottom-left) */}
-      <div className={`${box} absolute left-2 bottom-14`}>
+      {/* ground speed + track (mid-left, under the steering cue — clear of the CTAF band) */}
+      <div className={`${box} absolute left-2 top-[60%]`}>
         <div className="text-[11px] font-bold tracking-widest" style={{ color: "var(--color-muted)" }}>
           GS · TRK
         </div>

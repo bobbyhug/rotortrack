@@ -19,13 +19,21 @@ export function useMock(
   const posRef = useRef<LatLon>(start);
   const tick = useRef(0);
 
-  // Reset the run whenever destination changes (or start/dest coincide).
+  // Initialize the start position ONCE. Do NOT teleport when the destination
+  // changes mid-run — keep flying from the current position toward the new target
+  // so the fixed course line stays anchored at the aircraft (and stays visible).
+  const initialized = useRef(false);
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      initialized.current = false;
+      return;
+    }
+    if (initialized.current) return;
     let s = start;
     if (distanceNm(s, dest) < 2) s = destinationPoint(dest, 200, 12); // ensure a route exists
     posRef.current = s;
     tick.current = 0;
+    initialized.current = true;
   }, [active, start.lat, start.lon, dest.lat, dest.lon]);
 
   useEffect(() => {

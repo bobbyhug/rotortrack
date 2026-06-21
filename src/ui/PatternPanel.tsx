@@ -24,7 +24,7 @@ export default function PatternPanel({ ident, result, runwayIdent, patternAltFt,
   if (!result) return null;
   const side = result.leftTraffic ? "LEFT" : "RIGHT";
   return (
-    <div className="surface absolute left-2 bottom-24 rounded-lg px-2.5 py-1.5">
+    <div className="surface absolute left-2 bottom-[112px] rounded-lg px-2.5 py-1.5">
       <div className="text-[11px] font-bold tracking-widest" style={{ color: "var(--color-muted)" }}>
         {ident} PATTERN — ADVISORY*
       </div>

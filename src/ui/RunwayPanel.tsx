@@ -13,7 +13,7 @@ interface Props {
 export default function RunwayPanel({ ident, rec, wind, windStale }: Props) {
   if (!rec) {
     return (
-      <div className="surface absolute left-2 top-14 rounded-lg px-2.5 py-1.5">
+      <div className="surface absolute left-2 top-[84px] rounded-lg px-2.5 py-1.5">
         <div className="text-[11px] font-bold tracking-widest" style={{ color: "var(--color-muted)" }}>
           {ident} RWY
         </div>
@@ -25,7 +25,7 @@ export default function RunwayPanel({ ident, rec, wind, windStale }: Props) {
   // arrow points the direction the wind is going (downwind), rotated to runway-up frame
   const rel = wind?.dirDegTrue != null && rec.end.headingT != null ? wind.dirDegTrue - rec.end.headingT : 0;
   return (
-    <div className="surface absolute left-2 top-14 rounded-lg px-2.5 py-1.5">
+    <div className="surface absolute left-2 top-[84px] rounded-lg px-2.5 py-1.5">
       <div className="text-[11px] font-bold tracking-widest" style={{ color: "var(--color-muted)" }}>
         {ident} — LAND {windStale ? "(advisory*)" : "ADVISORY*"}
       </div>
