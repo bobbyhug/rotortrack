@@ -80,10 +80,10 @@ export default function Hud({
       {/* correction cue + XTE (center-left) */}
       <div className="absolute left-2 top-1/2 -translate-y-1/2 text-left">
         {showCue ? (
-          <div className="text-[40px] font-extrabold leading-none" style={{ color: "var(--color-cyan)" }}>
-            {nav.turnSide === "L" ? "‹ " : ""}
-            {cueDeg}°{nav.turnSide}
-            {nav.turnSide === "R" ? " ›" : ""}
+          <div className="flex items-center gap-2" style={{ color: "var(--color-cyan)" }}>
+            {nav.turnSide === "L" && <span className="text-[44px] font-bold leading-none">←</span>}
+            <span className="text-[26px] font-semibold leading-none">{cueDeg}°</span>
+            {nav.turnSide === "R" && <span className="text-[44px] font-bold leading-none">→</span>}
           </div>
         ) : (
           <div className="text-[24px] font-extrabold" style={{ color: "var(--color-green)" }}>
