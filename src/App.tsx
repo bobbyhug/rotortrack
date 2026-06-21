@@ -54,9 +54,17 @@ export default function App() {
   const { fix, status } = MOCK ? mock : real;
   const wind = useWind(MOCK);
 
-  // pre-cache corridor tiles once (best-effort)
+  // pre-cache corridor tiles — but only on a good connection and deferred until
+  // after first paint, so we never hammer a weak/metered cellular link on load.
   useEffect(() => {
-    void precacheBbox(CORRIDOR);
+    const conn = (navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string };
+    }).connection;
+    if (conn && (conn.saveData || ["slow-2g", "2g", "3g"].includes(conn.effectiveType ?? ""))) {
+      return; // constrained link → rely on cache-as-you-view instead
+    }
+    const id = window.setTimeout(() => void precacheBbox(CORRIDOR), 8000);
+    return () => window.clearTimeout(id);
   }, []);
 
   // reset the course-line origin when the leg target changes

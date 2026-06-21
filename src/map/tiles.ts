@@ -56,30 +56,40 @@ export function tileXY(lat: number, lon: number, z: number): { x: number; y: num
   return { x, y };
 }
 
-/** Pre-fetch CARTO tiles covering a bbox at the given zooms into IndexedDB. */
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Gently pre-fetch CARTO tiles for a bbox into IndexedDB — sequential, throttled,
+ * and capped so it never hogs a weak/cellular link. Best-effort; safe to abort.
+ */
 export async function precacheBbox(
   box: { latMin: number; latMax: number; lonMin: number; lonMax: number },
-  zooms = [9, 10, 11, 12],
+  zooms = [10, 11],
+  maxTiles = 80,
 ): Promise<number> {
-  let n = 0;
+  let cached = 0;
+  let fetched = 0;
   for (const z of zooms) {
     const a = tileXY(box.latMax, box.lonMin, z);
     const b = tileXY(box.latMin, box.lonMax, z);
     for (let x = a.x; x <= b.x; x++) {
       for (let y = a.y; y <= b.y; y++) {
+        if (fetched >= maxTiles) return cached;
         const url = CARTO.replace("{z}", String(z)).replace("{x}", String(x)).replace("{y}", String(y));
-        if (await getTile(url)) continue;
+        if (await getTile(url)) continue; // already cached
+        fetched++;
         try {
           const res = await fetch(url);
           if (res.ok) {
             await putTile(url, await res.blob());
-            n++;
+            cached++;
           }
         } catch {
-          /* offline / skip */
+          return cached; // network gone — stop quietly
         }
+        await sleep(150); // low-priority: ~6 tiles/s, never saturate the link
       }
     }
   }
-  return n;
+  return cached;
 }
