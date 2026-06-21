@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { LatLon } from "./types";
+import type { Destination, LatLon } from "./types";
 import { bearingDeg, crossTrack, distanceNm, eteSeconds } from "./geo/greatCircle";
 import { turnCue } from "./geo/track";
 import { angleDelta } from "./geo/units";
@@ -38,15 +38,14 @@ const CORRIDOR = { latMin: 36.6, latMax: 37.2, lonMin: -85.15, lonMax: -84.6 };
 export default function App() {
   const [acked, setAcked] = useState(disclaimerAck());
   const [destinations] = useState(loadDestinations);
-  const [selectedId, setSelectedId] = useState(
-    destinations.find((d) => d.id === "shawns")?.id ?? destinations[0].id,
+  const [selected, setSelected] = useState<Destination>(
+    () => destinations.find((d) => d.id === "shawns") ?? destinations[0],
   );
+  const [nearbyChoices, setNearbyChoices] = useState<Destination[]>([]);
   const [diverted, setDiverted] = useState(false);
   const [listOpen, setListOpen] = useState(false);
   const [settings, setSettings] = useState(loadSettings);
   const [legOrigin, setLegOrigin] = useState<LatLon>(loadLastFix() ?? HOME);
-
-  const selected = destinations.find((d) => d.id === selectedId) ?? destinations[0];
 
   // own-ship: mock simulator or real sensors
   const real = useFlightState(!MOCK);
@@ -71,7 +70,7 @@ export default function App() {
   useEffect(() => {
     setLegOrigin(fix ?? loadLastFix() ?? HOME);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, diverted]);
+  }, [selected.id, diverted]);
 
   const center = fix ?? loadLastFix() ?? HOME;
   const nearestList = useMemo(() => (fix ? nearestAirports(fix, 25) : []), [fix]);
@@ -195,10 +194,25 @@ export default function App() {
     saveSettings(s);
   };
   const toggleDivert = () => nearest && setDiverted((v) => !v);
-  const pickDest = (id: string) => {
-    setSelectedId(id);
+  const pickDest = (dest: Destination) => {
+    setSelected(dest);
     setDiverted(false);
     setListOpen(false);
+  };
+  // Open the picker, snapshotting nearby airports so the list doesn't reorder while browsing.
+  const openDest = () => {
+    setNearbyChoices(
+      fix
+        ? nearestAirports(fix, 40, 12).map((n) => ({
+            id: `apt:${n.airport.ident}`,
+            name: `${n.airport.ident} · ${n.airport.name}`,
+            ident: n.airport.ident,
+            lat: n.airport.lat,
+            lon: n.airport.lon,
+          }))
+        : [],
+    );
+    setListOpen(true);
   };
 
   // extra hotkeys (d=divert, t=track-up) on top of the D-pad rail
@@ -227,7 +241,7 @@ export default function App() {
     <div className="relative h-[600px] w-[600px] overflow-hidden bg-black">
       <MapView fix={fix} route={fix ? { from: fix, to: target } : null} trackUp={settings.trackUp} fallbackCenter={center} />
 
-      <Hud nav={nav} gps={status} />
+      <Hud nav={nav} gps={status} onOpenDest={openDest} />
       <NearestReadout nearest={nearest} rec={nearestRec} windStale={isStale(nearestWind)} reach={reach} diverted={diverted} />
       {approach && (
         <>
@@ -247,8 +261,8 @@ export default function App() {
 
       {/* action rail (D-pad) */}
       <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-2">
-        <button className="focusable surface rounded-xl px-4 py-3 text-[15px] font-bold" autoFocus onClick={() => setListOpen(true)}>
-          ▸ DEST
+        <button className="focusable surface rounded-xl px-4 py-3 text-[15px] font-bold" autoFocus onClick={openDest}>
+          ▸ DIRECT TO
         </button>
         <button
           className="focusable surface rounded-xl px-4 py-3 text-[15px] font-bold"
@@ -269,7 +283,13 @@ export default function App() {
       </div>
 
       {listOpen && (
-        <DestinationList destinations={destinations} selectedId={selectedId} onSelect={pickDest} onClose={() => setListOpen(false)} />
+        <DestinationList
+          saved={destinations}
+          nearby={nearbyChoices}
+          selectedId={selected.id}
+          onSelect={pickDest}
+          onClose={() => setListOpen(false)}
+        />
       )}
     </div>
   );

@@ -22,22 +22,33 @@ const box = "surface rounded-lg px-2.5 py-1.5";
 
 const TURN_DEADBAND_DEG = 3; // ignore sub-3° corrections (below GPS-heading noise)
 
-export default function Hud({ nav, gps }: { nav: Nav; gps: GpsStatus }) {
+export default function Hud({
+  nav,
+  gps,
+  onOpenDest,
+}: {
+  nav: Nav;
+  gps: GpsStatus;
+  onOpenDest: () => void;
+}) {
   // Show a turn cue only when the correction is worth a control input; round to
   // the nearest 5° so it reads cleanly (5°R / 10°L) instead of jittering by 1°.
   const showCue = nav.turnDeg != null && nav.turnDeg >= TURN_DEADBAND_DEG;
   const cueDeg = nav.turnDeg != null ? Math.round(nav.turnDeg / 5) * 5 : 0;
   return (
     <>
-      {/* destination (top-left) */}
-      <div className={`${box} absolute left-2 top-2 max-w-[230px]`}>
+      {/* destination (top-left) — tap to change Direct-To target */}
+      <button
+        className={`${box} focusable absolute left-2 top-2 max-w-[240px] text-left`}
+        onClick={onOpenDest}
+      >
         <div className="text-[11px] font-bold tracking-widest" style={{ color: "var(--color-muted)" }}>
-          {nav.diverted ? "DIVERT TO" : "DIRECT TO"}
+          {nav.diverted ? "DIVERT TO" : "DIRECT TO ▾"}
         </div>
         <div className="truncate text-[18px] font-extrabold" style={{ color: "var(--color-magenta)" }}>
           {nav.targetName}
         </div>
-      </div>
+      </button>
 
       {/* distance + ETE (top-right under NRST handled separately) */}
       <div className={`${box} absolute right-2 top-[88px] text-right`}>

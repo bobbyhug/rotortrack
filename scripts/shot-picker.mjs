@@ -1,0 +1,12 @@
+import { chromium } from "playwright";
+const b = await chromium.launch({ args: ["--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader","--ignore-gpu-blocklist"] });
+const p = await (await b.newContext({ viewport:{width:600,height:600}, deviceScaleFactor:2 })).newPage();
+const errs=[]; p.on("console",m=>m.type()==="error"&&errs.push(m.text())); p.on("pageerror",e=>errs.push("PAGEERR "+e.message));
+await p.goto("http://localhost:5173/?mock=1",{waitUntil:"load"});
+const ack=p.getByRole("button",{name:/I understand/i}); if(await ack.count()) await ack.click();
+await p.waitForTimeout(2600);
+await p.getByRole("button",{name:/DIRECT TO/i}).first().click();
+await p.waitForTimeout(900);
+await p.screenshot({ path:"/tmp/rotortrack-picker.png" });
+console.log("ERRORS:", errs.length? errs.join("\n"):"none");
+await b.close();
