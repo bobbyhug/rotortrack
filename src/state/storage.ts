@@ -5,6 +5,7 @@ const K = {
   dests: "rotortrack:destinations",
   lastFix: "rotortrack:lastfix",
   disclaimer: "rotortrack:disclaimerAck",
+  hint: "rotortrack:hintSeen",
   settings: "rotortrack:settings",
 };
 
@@ -33,6 +34,9 @@ export const saveLastFix = (p: LatLon): void => save(K.lastFix, { lat: p.lat, lo
 
 export const disclaimerAck = (): boolean => load(K.disclaimer, false);
 export const ackDisclaimer = (): void => save(K.disclaimer, true);
+
+export const loadHintSeen = (): boolean => load(K.hint, false);
+export const ackHint = (): void => save(K.hint, true);
 
 export interface Settings {
   trackUp: boolean;

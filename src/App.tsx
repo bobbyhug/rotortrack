@@ -14,8 +14,10 @@ import { useMock } from "./state/useMock";
 import { useWind } from "./state/useWind";
 import {
   ackDisclaimer,
+  ackHint,
   disclaimerAck,
   loadDestinations,
+  loadHintSeen,
   loadLastFix,
   loadSettings,
   saveSettings,
@@ -29,6 +31,7 @@ import PatternPanel from "./ui/PatternPanel";
 import DestinationList from "./ui/DestinationList";
 import CtafPanel from "./ui/CtafPanel";
 import Disclaimer from "./ui/Disclaimer";
+import HintOverlay from "./ui/HintOverlay";
 import { useDpad } from "./ui/dpad";
 
 const MOCK = /[?&]mock/.test(location.search);
@@ -37,6 +40,7 @@ const CORRIDOR = { latMin: 36.6, latMax: 37.2, lonMin: -85.15, lonMax: -84.6 };
 
 export default function App() {
   const [acked, setAcked] = useState(disclaimerAck());
+  const [hintDone, setHintDone] = useState(loadHintSeen());
   const [destinations] = useState(loadDestinations);
   const [selected, setSelected] = useState<Destination>(
     () => destinations.find((d) => d.id === "shawns") ?? destinations[0],
@@ -281,6 +285,15 @@ export default function App() {
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[9px]" style={{ color: "var(--color-muted)" }}>
         ADVISORY ONLY · VFR · not for navigation {MOCK ? "· MOCK" : ""}
       </div>
+
+      {!hintDone && !listOpen && (
+        <HintOverlay
+          onDismiss={() => {
+            ackHint();
+            setHintDone(true);
+          }}
+        />
+      )}
 
       {listOpen && (
         <DestinationList
