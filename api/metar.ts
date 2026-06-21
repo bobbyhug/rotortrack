@@ -13,10 +13,16 @@ interface Res {
 }
 
 export default async function handler(req: Req, res: Res): Promise<void> {
-  const raw = req.query?.ids ?? "KEKQ,KSME";
-  const ids = (Array.isArray(raw) ? raw.join(",") : String(raw))
-    .replace(/[^A-Z0-9,]/gi, "")
-    .slice(0, 200);
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v.join(",") : v);
+  const bbox = one(req.query?.bbox);
+  let qs: string;
+  if (bbox) {
+    // minLat,minLon,maxLat,maxLon — return all reporting stations in the area
+    qs = `bbox=${encodeURIComponent(bbox.replace(/[^0-9.,-]/g, "").slice(0, 64))}`;
+  } else {
+    const ids = (one(req.query?.ids) ?? "KEKQ,KSME").replace(/[^A-Z0-9,]/gi, "").slice(0, 200);
+    qs = `ids=${encodeURIComponent(ids)}`;
+  }
 
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -24,7 +30,7 @@ export default async function handler(req: Req, res: Res): Promise<void> {
 
   try {
     const r = await fetch(
-      `https://aviationweather.gov/api/data/metar?ids=${encodeURIComponent(ids)}&format=json`,
+      `https://aviationweather.gov/api/data/metar?${qs}&format=json`,
       { headers: { "User-Agent": "RotorTrack/1.0 (VFR SA aid)" } },
     );
     const body = await r.text();

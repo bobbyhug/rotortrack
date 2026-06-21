@@ -3,16 +3,17 @@ import type { LatLon, Wind } from "../types";
 import { distanceNm } from "../geo/greatCircle";
 import { parseMetar, type MetarJson } from "../wind/metar";
 
-// Reporting stations in/near the operating area (both confirmed reporting).
-const STATIONS = ["KEKQ", "KSME"];
+// Region bounding box (minLat,minLon,maxLat,maxLon): fetch ALL reporting stations
+// near the operating area so we can always pick the nearest one to any point.
+const REGION_BBOX = "35.5,-86.5,38.5,-83";
 const REFRESH_MS = 5 * 60 * 1000;
 const CACHE_KEY = "rotortrack:metar";
 
 // Dev: through the Vite proxy to AWC. Prod: the same-origin Vercel function.
-const metarUrl = (ids: string) =>
+const metarUrl = () =>
   import.meta.env.DEV
-    ? `/awc/api/data/metar?ids=${ids}&format=json`
-    : `/api/metar?ids=${ids}`;
+    ? `/awc/api/data/metar?bbox=${REGION_BBOX}&format=json`
+    : `/api/metar?bbox=${encodeURIComponent(REGION_BBOX)}`;
 
 interface StationWind extends Wind {
   lat: number;
@@ -44,7 +45,7 @@ export function useWind(mock: boolean): WindState {
     let cancelled = false;
     async function fetchWx() {
       try {
-        const res = await fetch(metarUrl(STATIONS.join(",")), { cache: "no-store" });
+        const res = await fetch(metarUrl(), { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: MetarJson[] = await res.json();
         const sw: StationWind[] = data
