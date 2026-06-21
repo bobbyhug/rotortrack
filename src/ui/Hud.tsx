@@ -60,7 +60,7 @@ export default function Hud({
           <span className="text-[14px] font-bold"> nm</span>
         </div>
         <div className="text-[15px] font-bold" style={{ color: "var(--color-cyan)" }}>
-          {fmtEte(nav.eteSec)} · BRG {fmtDeg(nav.bearingDeg)}° {cardinal8(nav.bearingDeg)}
+          {fmtEte(nav.eteSec)} · BRG {fmtDeg(nav.bearingDeg)}°T {cardinal8(nav.bearingDeg)}
         </div>
       </div>
 
@@ -104,7 +104,7 @@ export default function Hud({
           {nav.gsKt != null ? fmtKt(nav.gsKt) : "--"}
           <span className="text-[13px] font-bold"> kt</span>
           <span className="ml-2" style={{ color: "var(--color-cyan)" }}>
-            {fmtDeg(nav.trackDeg)}°
+            {fmtDeg(nav.trackDeg)}°T
           </span>
         </div>
       </div>

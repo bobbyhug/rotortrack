@@ -33,7 +33,7 @@ export default function PatternPanel({ ident, result, runwayIdent, patternAltFt,
       </div>
       {inboundFromDeg != null && (
         <div className="text-[13px] font-bold" style={{ color: "var(--color-amber)" }}>
-          INBOUND FROM {cardinal8(inboundFromDeg)} · {fmtDeg(inboundFromDeg)}°
+          INBOUND FROM {cardinal8(inboundFromDeg)} · {fmtDeg(inboundFromDeg)}°T
         </div>
       )}
       <div className="text-[12px]">

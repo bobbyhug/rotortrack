@@ -32,7 +32,7 @@ export default function NearestReadout({ nearest, rec, windStale, reach, diverte
         {nearest.isHeliport ? " ⏶" : ""}
       </div>
       <div className="text-[14px] font-semibold leading-tight">
-        {fmtNm(nearest.distanceNm)}nm {fmtDeg(nearest.bearingDeg)}°
+        {fmtNm(nearest.distanceNm)}nm {fmtDeg(nearest.bearingDeg)}°T
       </div>
       <div className="text-[13px] leading-tight" style={{ color: "var(--color-ink)" }}>{rwy}</div>
       {reach && (
