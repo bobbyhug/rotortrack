@@ -32,6 +32,7 @@ export interface CtafOpts {
   leftTraffic: boolean;
   runwayIdent: string | null;
   departing?: boolean; // leaving the field rather than arriving
+  altFtMsl?: number | null; // for the position report (rounded to nearest 100)
 }
 
 const IN_PATTERN: Leg[] = ["UPWIND", "CROSSWIND", "DOWNWIND", "BASE", "FINAL"];
@@ -42,7 +43,7 @@ const IN_PATTERN: Leg[] = ["UPWIND", "CROSSWIND", "DOWNWIND", "BASE", "FINAL"];
  */
 export function buildCtafCall(o: CtafOpts): string {
   const field = ctafName(o.fieldName);
-  const rwy = o.runwayIdent ? `Runway ${o.runwayIdent}` : null;
+  const rwy = o.runwayIdent ? `runway ${o.runwayIdent}` : null;
   const side = o.leftTraffic ? "left" : "right";
 
   let body: string;
@@ -53,14 +54,16 @@ export function buildCtafCall(o: CtafOpts): string {
       : o.leg === "CROSSWIND" ? `${side} crosswind`
       : o.leg === "FINAL" ? "final"
       : "upwind";
-    body = rwy ? `${phrase}, ${rwy}` : phrase;
+    body = rwy ? `${phrase} ${rwy}` : phrase;
   } else if (o.departing) {
     body = `departing to the ${cardinalWord(o.inboundFromDeg)}`;
   } else {
     const miles = Math.max(1, Math.round(o.distNm));
+    const altFt = o.altFtMsl != null && o.altFtMsl >= 100 ? Math.round(o.altFtMsl / 100) * 100 : null;
+    const alt = altFt != null ? `, ${altFt.toLocaleString("en-US")}` : "";
     body =
-      `${miles} ${miles === 1 ? "mile" : "miles"} ${cardinalWord(o.inboundFromDeg)}, inbound` +
-      (rwy ? `, landing ${rwy}` : " for landing");
+      `${miles} ${miles === 1 ? "mile" : "miles"} ${cardinalWord(o.inboundFromDeg)}${alt}, ` +
+      `inbound for landing${rwy ? ` ${rwy}` : ""}`;
   }
   return `${field} Traffic, ${o.callsign}, ${body}, ${field}.`;
 }

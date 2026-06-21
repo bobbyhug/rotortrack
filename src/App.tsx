@@ -176,6 +176,7 @@ export default function App() {
         leftTraffic: pattern?.leftTraffic ?? true,
         runwayIdent: rec?.end.ident ?? null,
         departing,
+        altFtMsl: fix.altFtMsl,
       }),
     };
   }, [fix, selected, diverted, nearest, wind, settings.callsign]);

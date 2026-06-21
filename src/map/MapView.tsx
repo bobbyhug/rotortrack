@@ -53,7 +53,7 @@ export default function MapView({ fix, route, trackUp, fallbackCenter }: MapView
       style: DARK_STYLE,
       center: [fallbackCenter.lon, fallbackCenter.lat],
       zoom: 11,
-      attributionControl: { compact: true },
+      attributionControl: false, // hidden on the lens; credit kept in README per OSM/CARTO terms
       dragRotate: false,
       pitchWithRotate: false,
       touchZoomRotate: false,
