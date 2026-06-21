@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Destination, LatLon } from "./types";
 import { bearingDeg, crossTrack, distanceNm, eteSeconds } from "./geo/greatCircle";
 import { turnCue } from "./geo/track";
@@ -70,11 +70,18 @@ export default function App() {
     return () => window.clearTimeout(id);
   }, []);
 
-  // reset the course-line origin when the leg target changes
+  // The magenta course line is FIXED from where Direct-To was engaged → destination
+  // (so drifting shows the ship off the line, ForeFlight-style; XTK matches it).
+  // Set the origin to the fix at the moment a new leg (destination/divert) first
+  // has a position.
+  const engagedRef = useRef<string | null>(null);
   useEffect(() => {
-    setLegOrigin(fix ?? loadLastFix() ?? HOME);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected.id, diverted]);
+    const key = diverted ? "divert" : selected.id;
+    if (fix && engagedRef.current !== key) {
+      engagedRef.current = key;
+      setLegOrigin(fix);
+    }
+  }, [fix, selected.id, diverted]);
 
   const center = fix ?? loadLastFix() ?? HOME;
   const nearestList = useMemo(() => (fix ? nearestAirports(fix, 25) : []), [fix]);
@@ -244,7 +251,7 @@ export default function App() {
 
   return (
     <div className="relative h-[600px] w-[600px] overflow-hidden bg-black">
-      <MapView fix={fix} route={fix ? { from: fix, to: target } : null} trackUp={settings.trackUp} fallbackCenter={center} />
+      <MapView fix={fix} route={fix ? { from: legOrigin, to: target } : null} trackUp={settings.trackUp} fallbackCenter={center} />
 
       <Hud nav={nav} gps={status} onOpenDest={openDest} />
       <NearestReadout nearest={nearest} rec={nearestRec} windStale={isStale(nearestWind)} reach={reach} diverted={diverted} />

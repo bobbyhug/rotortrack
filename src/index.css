@@ -32,18 +32,31 @@ html, body, #root {
 
 #root { position: relative; }
 
-/* D-pad focus model: only the focusable ring + slight scale; never a big bright fill. */
+/* D-pad focus: make the highlighted container UNMISTAKABLE at a glance.
+   Uses an outline (renders above inline borders/backgrounds), a strong glow, a
+   slight grow, and a gentle pulse so it's easy to find when focus jumps. */
 .focusable {
   outline: none;
   border: 2px solid transparent;
-  transition: transform 475ms cubic-bezier(0.6, 0, 0.4, 1),
-              border-color 200ms ease, box-shadow 200ms ease;
+  transition: transform 180ms ease, box-shadow 180ms ease, outline-color 150ms ease;
 }
 .focusable:focus,
 .focusable[data-focus="true"] {
-  border-color: var(--color-cyan);
-  box-shadow: 0 0 18px rgba(0, 224, 255, 0.55);
-  transform: scale(0.96);
+  position: relative;
+  z-index: 50;
+  outline: 3px solid #ffffff;     /* bright white ring — max visibility on the additive display */
+  outline-offset: 2px;
+  box-shadow: 0 0 24px 5px rgba(0, 224, 255, 0.85);
+  transform: scale(1.05);         /* grows when focused (pops toward you) */
+  animation: focus-pulse 1.4s ease-in-out infinite;
+}
+@keyframes focus-pulse {
+  0%, 100% { box-shadow: 0 0 16px 3px rgba(0, 224, 255, 0.55); }
+  50%      { box-shadow: 0 0 32px 9px rgba(0, 224, 255, 1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .focusable:focus,
+  .focusable[data-focus="true"] { animation: none; }
 }
 
 /* Additive elevation for HUD chips/panels (not translucency). */
