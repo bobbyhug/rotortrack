@@ -16,6 +16,7 @@ export interface Nav {
   windText: string;
   windCompKt: number | null;
   windCompLabel: string | null;
+  altFtMsl: number | null;
 }
 
 const box = "surface rounded-lg px-2.5 py-1.5";
@@ -95,10 +96,10 @@ export default function Hud({
         </div>
       </div>
 
-      {/* ground speed + track (mid-left, under the steering cue — clear of the CTAF band) */}
-      <div className={`${box} absolute left-2 top-[60%]`}>
+      {/* ground speed · track · altitude (mid-left, under the steering cue) */}
+      <div className={`${box} absolute left-2 top-[57%]`}>
         <div className="text-[11px] font-bold tracking-widest" style={{ color: "var(--color-muted)" }}>
-          GS · TRK
+          GS · TRK · ALT
         </div>
         <div className="text-[22px] font-extrabold leading-none">
           {nav.gsKt != null ? fmtKt(nav.gsKt) : "--"}
@@ -106,6 +107,11 @@ export default function Hud({
           <span className="ml-2" style={{ color: "var(--color-cyan)" }}>
             {fmtDeg(nav.trackDeg)}°T
           </span>
+        </div>
+        <div className="text-[14px] font-bold">
+          {nav.altFtMsl != null
+            ? `${(Math.round(nav.altFtMsl / 10) * 10).toLocaleString("en-US")}ʼ MSL`
+            : "alt --"}
         </div>
       </div>
 

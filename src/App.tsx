@@ -32,11 +32,23 @@ import DestinationList from "./ui/DestinationList";
 import CtafPanel from "./ui/CtafPanel";
 import Disclaimer from "./ui/Disclaimer";
 import HintOverlay from "./ui/HintOverlay";
+import RangeRing from "./ui/RangeRing";
+import NorthArrow from "./ui/NorthArrow";
 import { useDpad } from "./ui/dpad";
 
 const MOCK = /[?&]mock/.test(location.search);
 const HOME: LatLon = { lat: DEFAULT_DESTINATIONS[0].lat, lon: DEFAULT_DESTINATIONS[0].lon };
 const CORRIDOR = { latMin: 36.6, latMax: 37.2, lonMin: -85.15, lonMax: -84.6 };
+
+/** Auto-zoom: wider enroute, tighter on approach. */
+function zoomForDistance(distNm: number | null): number {
+  if (distNm == null) return 11;
+  if (distNm > 40) return 9;
+  if (distNm > 18) return 10;
+  if (distNm > 7) return 11;
+  if (distNm > 2.5) return 12;
+  return 13;
+}
 
 export default function App() {
   const [acked, setAcked] = useState(disclaimerAck());
@@ -104,6 +116,7 @@ export default function App() {
         targetName: target.name, diverted, distNm: null, bearingDeg: null, eteSec: null,
         gsKt: null, trackDeg: null, xtkNm: null, xtkSide: null, turnDeg: null, turnSide: null,
         windText: formatWind(wind.near(HOME)), windCompKt: null, windCompLabel: null,
+        altFtMsl: null,
       };
     }
     const distNm = distanceNm(fix, target);
@@ -128,8 +141,12 @@ export default function App() {
       eteSec: eteSeconds(distNm, fix.gsKt), gsKt: fix.gsKt, trackDeg: fix.trackDeg,
       xtkNm: xt.xtkNm, xtkSide: xt.side, turnDeg: cue?.deg ?? null, turnSide: cue?.side ?? null,
       windText: formatWind(w), windCompKt, windCompLabel,
+      altFtMsl: fix.altFtMsl,
     };
   }, [fix, target, legOrigin, wind, diverted]);
+
+  const mapZoom = zoomForDistance(nav.distNm);
+  const mapBearing = settings.trackUp ? (fix?.trackDeg ?? 0) : 0;
 
   // approach airport (for runway + pattern), within 3 nm
   const approach = useMemo(() => {
@@ -205,6 +222,12 @@ export default function App() {
     setSettings(s);
     saveSettings(s);
   };
+  const toggleVoice = () => {
+    const s = { ...settings, voice: !settings.voice };
+    setSettings(s);
+    saveSettings(s);
+    if (!s.voice && "speechSynthesis" in window) window.speechSynthesis.cancel();
+  };
   const toggleDivert = () => nearest && setDiverted((v) => !v);
   const pickDest = (dest: Destination) => {
     setSelected(dest);
@@ -232,10 +255,50 @@ export default function App() {
     const h = (e: KeyboardEvent) => {
       if (e.key === "d" || e.key === "D") toggleDivert();
       if (e.key === "t" || e.key === "T") toggleTrackUp();
+      if (e.key === "v" || e.key === "V") toggleVoice();
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   });
+  // spoken callouts — distance milestones, pattern legs, arrival (deduped via ref)
+  const voiceRef = useRef({ bucket: Infinity, leg: "", arrived: false });
+  useEffect(() => {
+    if (!settings.voice || !fix || !("speechSynthesis" in window)) return;
+    const say = (t: string) => {
+      const u = new SpeechSynthesisUtterance(t);
+      u.rate = 1.0;
+      window.speechSynthesis.speak(u);
+    };
+    const v = voiceRef.current;
+    const d = nav.distNm;
+    if (d != null) {
+      if (d > 12) v.bucket = Infinity; // re-arm for a fresh approach
+      const crossed = [5, 3, 2, 1, 0.5].find((t) => d <= t && v.bucket > t);
+      if (crossed != null) {
+        v.bucket = crossed;
+        const m = crossed < 1 ? "half mile" : crossed === 1 ? "one mile" : `${crossed} miles`;
+        say(`${m} from ${target.name}`);
+      }
+      if (d < 0.18 && !v.arrived) {
+        v.arrived = true;
+        say(`Arrived ${target.name}`);
+      }
+      if (d > 0.6) v.arrived = false;
+    }
+    const leg = approach?.pattern?.leg;
+    if (leg && leg !== "MANEUVERING" && leg !== v.leg) {
+      v.leg = leg;
+      const side = approach?.pattern?.leftTraffic ? "left" : "right";
+      const phrase =
+        leg === "DOWNWIND" ? `${side} downwind`
+        : leg === "BASE" ? `turning ${side} base`
+        : leg === "CROSSWIND" ? `${side} crosswind`
+        : leg === "FINAL" ? "final"
+        : "upwind";
+      say(phrase + (approach?.rec ? `, runway ${approach.rec.end.ident}` : ""));
+    }
+  }, [nav.distNm, approach, settings.voice, fix, target.name]);
+
   useDpad(() => setListOpen(false));
 
   if (!acked) {
@@ -251,9 +314,11 @@ export default function App() {
 
   return (
     <div className="relative h-[600px] w-[600px] overflow-hidden bg-black">
-      <MapView fix={fix} route={fix ? { from: legOrigin, to: target } : null} trackUp={settings.trackUp} fallbackCenter={center} />
+      <MapView fix={fix} route={fix ? { from: legOrigin, to: target } : null} trackUp={settings.trackUp} zoom={mapZoom} fallbackCenter={center} />
+      <RangeRing zoom={mapZoom} lat={(fix ?? center).lat} />
 
       <Hud nav={nav} gps={status} onOpenDest={openDest} />
+      <NorthArrow mapBearingDeg={mapBearing} />
       <NearestReadout nearest={nearest} rec={nearestRec} windStale={isStale(nearestWind)} reach={reach} diverted={diverted} />
       {approach && (
         <>
@@ -286,6 +351,9 @@ export default function App() {
         </button>
         <button className="focusable surface rounded-xl px-4 py-3 text-[15px] font-bold" onClick={toggleTrackUp}>
           {settings.trackUp ? "TRK↑" : "N↑"}
+        </button>
+        <button className="focusable surface rounded-xl px-4 py-3 text-[15px] font-bold" aria-label="voice callouts" onClick={toggleVoice}>
+          {settings.voice ? "🔊" : "🔇"}
         </button>
       </div>
 

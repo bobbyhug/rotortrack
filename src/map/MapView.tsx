@@ -33,10 +33,11 @@ export interface MapViewProps {
   /** active route line endpoints (own-ship → destination) */
   route: { from: LatLon; to: LatLon } | null;
   trackUp: boolean;
+  zoom: number;
   fallbackCenter: LatLon;
 }
 
-export default function MapView({ fix, route, trackUp, fallbackCenter }: MapViewProps) {
+export default function MapView({ fix, route, trackUp, zoom, fallbackCenter }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const ownshipRef = useRef<maplibregl.Marker | null>(null);
@@ -117,9 +118,10 @@ export default function MapView({ fix, route, trackUp, fallbackCenter }: MapView
     map.easeTo({
       center: [fix.lon, fix.lat],
       bearing: trackUp ? (fix.trackDeg ?? 0) : 0,
+      zoom,
       duration: 900,
     });
-  }, [fix, trackUp]);
+  }, [fix, trackUp, zoom]);
 
   // update route line
   useEffect(() => {
